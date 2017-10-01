@@ -19,8 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.context.junit4.SpringRunner
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
@@ -60,8 +59,6 @@ class BookControllerIT {
 
     @Test
     fun getBook() {
-        assertThat(bookService.getAll().size, `is`(1))
-
         mockClient.perform(get("/book/" + book.isbn))
             .andExpect(status().isOk)
             .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -72,8 +69,6 @@ class BookControllerIT {
 
     @Test
     fun getAllBooks() {
-        assertThat(bookService.getAll().size, `is`(1))
-
         val book2 = Book("9780141036137", "Animal Farm", "George Orwell",
             1, "Penguin Books", 112)
 
@@ -93,8 +88,6 @@ class BookControllerIT {
 
     @Test
     fun createBook() {
-        assertThat(bookService.getAll().size, `is`(1))
-
         val book2 = Book("9780141036137", "Animal Farm", "George Orwell",
             1, "Penguin Books", 112)
 
@@ -102,6 +95,7 @@ class BookControllerIT {
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(book2)))
             .andExpect(status().isCreated)
+            .andExpect(header().string("Location", "/book/" + book2.isbn))
 
         assertEquals(bookService.getAll().size, 2)
 
@@ -112,5 +106,21 @@ class BookControllerIT {
         assertThat(book2.edition, `is`(bookAssert.edition))
         assertThat(book2.publisher, `is`(bookAssert.publisher))
         assertThat(book2.pages, `is`(bookAssert.pages))
+    }
+
+    @Test
+    fun updateBook() {
+        book.edition = 5
+
+        mockClient.perform(put("/book")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(book)))
+            .andExpect(status().isNoContent)
+
+        assertEquals(bookService.getAll().size, 1)
+
+        val bookAssert = bookService.get(book.isbn)
+
+        assertThat(bookAssert.edition, `is`(5))
     }
 }
