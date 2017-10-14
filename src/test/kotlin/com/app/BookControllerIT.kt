@@ -4,6 +4,7 @@ import com.app.domain.Book
 import com.app.repository.BookRepository
 import com.app.service.BookService
 import com.app.web.BookController
+import com.app.web.exception.GlobalRestExceptionHandler
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.Matchers.containsInAnyOrder
@@ -46,7 +47,8 @@ class BookControllerIT {
 
     @Before
     fun setUp() {
-        mockClient = MockMvcBuilders.standaloneSetup(bookController).build()
+        mockClient = MockMvcBuilders.standaloneSetup(bookController)
+            .setControllerAdvice(GlobalRestExceptionHandler()).build()
 
         book = bookService.save(Book("9789726081890", "Nineteen Eighty-Four",
             "George Orwell", 1, "Antígona", 314))
@@ -122,5 +124,47 @@ class BookControllerIT {
         val bookAssert = bookService.get(book.isbn)
 
         assertThat(bookAssert.edition, `is`(5))
+    }
+
+    @Test
+    fun `get a book but book don't exists`() {
+        val isbn = "123456789"
+
+        mockClient.perform(get("/book/" + isbn))
+            .andExpect(status().isNotFound)
+            .andExpect(content().string("ISBN $isbn not found!"))
+    }
+
+    @Test
+    fun `create book but ISBN already exists`() {
+        mockClient.perform(post("/book")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(book)))
+            .andExpect(status().isConflict)
+            .andExpect(content().string("ISBN ${book.isbn} already exists!"))
+    }
+
+    @Test
+    fun `update book but book don't exists`() {
+        val book2 = Book("9780141036137", "Animal Farm", "George Orwell",
+            1, "Penguin Books", 112)
+
+        mockClient.perform(put("/book")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(book2)))
+            .andExpect(status().isNotFound)
+            .andExpect(content().string("ISBN ${book2.isbn} not found!"))
+    }
+
+    @Test
+    fun `create book but ISBN is empty`() {
+        val book2 = Book("", "Animal Farm", "George Orwell",
+            1, "Penguin Books", 112)
+
+        mockClient.perform(post("/book")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(book2)))
+            .andExpect(status().isBadRequest)
+            .andExpect(content().string("ISBN cannot be empty!"))
     }
 }

@@ -1,5 +1,6 @@
 package com.app.web.exception
 
+import com.app.exception.BadRequestException
 import com.app.exception.ConflictException
 import com.app.exception.NotFoundException
 import org.springframework.http.HttpStatus
@@ -21,7 +22,11 @@ class GlobalRestExceptionHandler {
     fun conflictHandler(ex: ConflictException): ResponseEntity<Any> =
         ResponseEntity.status(HttpStatus.CONFLICT).body(ex.message)
 
+    @ExceptionHandler(BadRequestException::class)
+    fun badRequestHandler(ex: BadRequestException): ResponseEntity<Any> =
+        ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
+
     @ExceptionHandler(Exception::class)
-    fun globalExceptionHhandler(): ResponseEntity<Any> =
+    fun globalExceptionHandler(): ResponseEntity<Any> =
         ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Aw snap! Something went wrong!")
 }

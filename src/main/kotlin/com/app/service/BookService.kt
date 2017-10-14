@@ -1,6 +1,7 @@
 package com.app.service
 
 import com.app.domain.Book
+import com.app.exception.BadRequestException
 import com.app.exception.ConflictException
 import com.app.exception.NotFoundException
 import com.app.repository.BookRepository
@@ -14,15 +15,17 @@ class BookService(val bookRepository: BookRepository) {
     fun getAll(): List<Book> = bookRepository.findAll()
 
     fun create(book: Book): Book {
+        if (book.isbn.isEmpty()) throw BadRequestException("ISBN cannot be empty!")
+
         bookRepository.findOne(book.isbn)
-            ?.let { throw ConflictException("ISBN $book.isbn already exists!") }
+            ?.let { throw ConflictException("ISBN ${book.isbn} already exists!") }
             ?: return save(book)
     }
 
     fun update(book: Book) {
         bookRepository.findOne(book.isbn)
             ?.let { save(book) }
-            ?: throw NotFoundException("ISBN $book.isbn not found!")
+            ?: throw NotFoundException("ISBN ${book.isbn} not found!")
     }
 
     fun save(book: Book): Book = bookRepository.save(book)
